@@ -205,13 +205,30 @@ export default function InvoicePdfPreview({ invoice, onClose }: Props) {
 
             {/* ── SIGNATURE BLOCK ── */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", marginBottom: "28px", marginTop: "16px" }}>
+              {/* Left: подпись + печать */}
               <div>
-                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 24px 0" }}>Руководитель / ИП</p>
+                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 4px 0" }}>Руководитель / ИП</p>
+                <div style={{ position: "relative", height: "88px" }}>
+                  {/* Подпись */}
+                  <img
+                    src="https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/1e6df93a-5956-48d3-8fda-77ead1406915.png"
+                    alt="Подпись"
+                    style={{ height: "60px", objectFit: "contain", objectPosition: "left bottom", position: "absolute", bottom: "8px", left: "0px" }}
+                  />
+                  {/* Печать — перекрывает нижний-правый угол подписи */}
+                  <img
+                    src="https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/e95b92dd-9ec9-4d53-8c1c-ab83b350edda.png"
+                    alt="Печать"
+                    style={{ height: "96px", objectFit: "contain", position: "absolute", bottom: "-4px", left: "50px", opacity: 0.85, mixBlendMode: "multiply" }}
+                  />
+                </div>
                 <div style={{ borderBottom: "1px solid #e5e7eb", marginBottom: "4px" }} />
-                <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0 }}>подпись / Ивченко М.В.</p>
+                <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0 }}>Ивченко М.В.</p>
               </div>
+              {/* Right: бухгалтер */}
               <div>
-                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 24px 0" }}>Главный бухгалтер</p>
+                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 4px 0" }}>Главный бухгалтер</p>
+                <div style={{ height: "88px" }} />
                 <div style={{ borderBottom: "1px solid #e5e7eb", marginBottom: "4px" }} />
                 <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0 }}>подпись</p>
               </div>
