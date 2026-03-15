@@ -337,9 +337,8 @@ def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "GET":
         qs = event.get("queryStringParameters") or {}
         if qs.get("setup") == "1":
-            host = event.get("headers", {}).get("host", "")
-            url  = f"https://{host}/"
-            r = requests.post(f"{API}/setWebhook", json={"url": url, "allowed_updates": ["message","callback_query"]}, timeout=10)
+            webhook_url = "https://functions.poehali.dev/87fff33f-e406-4cec-bf58-4420172e952d"
+            r = requests.post(f"{API}/setWebhook", json={"url": webhook_url, "allowed_updates": ["message","callback_query"]}, timeout=10)
             return {"statusCode": 200, "headers": CORS, "body": json.dumps({"webhook": r.json()})}
         return {"statusCode": 200, "headers": CORS, "body": json.dumps({"status": "Sweep TG Bot running"})}
 
