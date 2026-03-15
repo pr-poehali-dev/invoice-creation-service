@@ -1,6 +1,7 @@
-"""Генерация PDF счёта через ReportLab"""
+"""Генерация PDF счёта через ReportLab с поддержкой кириллицы"""
 import io
 import os
+import tempfile
 import requests
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -11,9 +12,15 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.enums import TA_RIGHT, TA_LEFT, TA_CENTER
 
-LOGO_URL = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/74927180-ad7e-4282-8b42-bb069cf38a4e.png"
+LOGO_URL  = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/74927180-ad7e-4282-8b42-bb069cf38a4e.png"
 STAMP_URL = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/e95b92dd-9ec9-4d53-8c1c-ab83b350edda.png"
 SIGN_URL  = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/1e6df93a-5956-48d3-8fda-77ead1406915.png"
+
+# Шрифты с поддержкой кириллицы (DejaVu — встроены в reportlab)
+FONT_URLS = {
+    "DejaVu":      "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf",
+    "DejaVu-Bold": "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans-Bold.ttf",
+}
 
 SUPPLIER_NAME    = "ИП ИВЧЕНКО МАРАТ ВАЛЕНТИНОВИЧ"
 SUPPLIER_INN     = "236000378430"
@@ -31,6 +38,23 @@ BG    = colors.HexColor("#f8faff")
 RED   = colors.HexColor("#ef4444")
 WHITE = colors.white
 
+_fonts_registered = False
+
+def _register_fonts():
+    global _fonts_registered
+    if _fonts_registered:
+        return
+    tmpdir = tempfile.gettempdir()
+    for name, url in FONT_URLS.items():
+        path = os.path.join(tmpdir, f"{name}.ttf")
+        if not os.path.exists(path):
+            r = requests.get(url, timeout=15)
+            with open(path, "wb") as f:
+                f.write(r.content)
+        pdfmetrics.registerFont(TTFont(name, path))
+    _fonts_registered = True
+
+
 def _fetch_image(url: str):
     try:
         r = requests.get(url, timeout=8)
@@ -38,12 +62,18 @@ def _fetch_image(url: str):
     except Exception:
         return None
 
+
 def _fmt_money(amount) -> str:
-    return f"{float(amount):,.2f} ₽".replace(",", " ")
+    try:
+        val = float(amount)
+        return f"{val:,.0f} руб.".replace(",", " ")
+    except Exception:
+        return "0 руб."
+
 
 def _fmt_date(d) -> str:
     if not d:
-        return "—"
+        return "-"
     if hasattr(d, "strftime"):
         return d.strftime("%d.%m.%Y")
     parts = str(d).split("-")
@@ -51,253 +81,253 @@ def _fmt_date(d) -> str:
         return f"{parts[2]}.{parts[1]}.{parts[0]}"
     return str(d)
 
+
 def generate_invoice_pdf(invoice: dict) -> bytes:
+    _register_fonts()
+
+    F  = "DejaVu"
+    FB = "DejaVu-Bold"
+
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
         leftMargin=20*mm, rightMargin=20*mm,
-        topMargin=16*mm, bottomMargin=16*mm
+        topMargin=14*mm, bottomMargin=14*mm
     )
 
-    W = A4[0] - 40*mm  # usable width
+    W = A4[0] - 40*mm
 
-    # styles
     def st(name, **kw):
-        base = dict(fontName="Helvetica", fontSize=9, leading=13, textColor=DARK)
+        base = dict(fontName=F, fontSize=9, leading=13, textColor=DARK)
         base.update(kw)
         return ParagraphStyle(name, **base)
 
-    s_title  = st("title",  fontSize=20, fontName="Helvetica-Bold", textColor=DARK)
-    s_num    = st("num",    fontSize=10, textColor=GRAY, fontName="Courier")
-    s_label  = st("label",  fontSize=8,  textColor=LGRAY, fontName="Helvetica-Bold", spaceAfter=2)
-    s_bold   = st("bold",   fontSize=9,  fontName="Helvetica-Bold")
-    s_small  = st("small",  fontSize=8,  textColor=GRAY)
-    s_xsmall = st("xsmall", fontSize=7,  textColor=LGRAY)
-    s_right  = st("right",  alignment=TA_RIGHT)
-    s_r_bold = st("rbold",  alignment=TA_RIGHT, fontName="Helvetica-Bold")
-    s_white  = st("white",  textColor=WHITE, fontName="Helvetica-Bold", fontSize=10)
-    s_th     = st("th",     textColor=WHITE, fontName="Helvetica-Bold", fontSize=8, alignment=TA_CENTER)
-    s_center = st("center", alignment=TA_CENTER, fontSize=8, textColor=GRAY)
-    s_red    = st("red",    textColor=RED, fontName="Helvetica-Bold", fontSize=8)
+    s_title  = st("title",  fontSize=18, fontName=FB, textColor=DARK)
+    s_num    = st("num",    fontSize=9,  textColor=GRAY, fontName=F)
+    s_bold   = st("bold",   fontSize=9,  fontName=FB)
+    s_small  = st("small",  fontSize=8,  textColor=GRAY, fontName=F)
+    s_xsmall = st("xsmall", fontSize=7,  textColor=LGRAY, fontName=F)
+    s_right  = st("right",  alignment=TA_RIGHT, fontName=F)
+    s_r_bold = st("rbold",  alignment=TA_RIGHT, fontName=FB)
+    s_white  = st("white",  textColor=WHITE, fontName=FB, fontSize=10)
+    s_th     = st("th",     textColor=WHITE, fontName=FB, fontSize=8, alignment=TA_CENTER)
+    s_center = st("center", alignment=TA_CENTER, fontSize=8, textColor=GRAY, fontName=F)
+    s_lbl_bl = st("lblbl",  fontName=FB, fontSize=7, textColor=BLUE, spaceAfter=3)
+    s_lbl_gr = st("lblgr",  fontName=FB, fontSize=7, textColor=LGRAY, spaceAfter=3)
 
     story = []
 
-    # ── HEADER ──
+    # ── HEADER ──────────────────────────────────────────────────────────
     logo_img = None
     logo_data = _fetch_image(LOGO_URL)
     if logo_data:
         logo_img = Image(logo_data, width=80, height=22)
 
-    header_data = [
-        [logo_img or Paragraph("Sweep", s_bold),
-         Paragraph("СЧЁТ НА ОПЛАТУ", s_title)]
-    ]
-    header_tbl = Table(header_data, colWidths=[W*0.5, W*0.5])
+    header_data = [[
+        logo_img or Paragraph("Sweep", s_bold),
+        Paragraph("СЧЁТ НА ОПЛАТУ", s_title)
+    ]]
+    header_tbl = Table(header_data, colWidths=[W * 0.5, W * 0.5])
     header_tbl.setStyle(TableStyle([
-        ("ALIGN", (0,0), (0,0), "LEFT"),
-        ("ALIGN", (1,0), (1,0), "RIGHT"),
-        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("ALIGN",  (0, 0), (0, 0), "LEFT"),
+        ("ALIGN",  (1, 0), (1, 0), "RIGHT"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]))
     story.append(header_tbl)
 
-    # number + dates
     meta_data = [
         [Paragraph(f"№ {invoice['number']}", s_num),
-         Paragraph(f"Дата: <b>{_fmt_date(invoice.get('created_at'))}</b>", s_right)],
+         Paragraph(f"Дата: {_fmt_date(invoice.get('created_at'))}", s_right)],
         [Paragraph("", s_small),
-         Paragraph(f"Срок оплаты: <font color='#ef4444'><b>{_fmt_date(invoice.get('due_date'))}</b></font>", s_right)],
+         Paragraph(f"Срок оплаты: {_fmt_date(invoice.get('due_date'))}", st("red_r", alignment=TA_RIGHT, fontName=FB, fontSize=8, textColor=RED))],
     ]
-    meta_tbl = Table(meta_data, colWidths=[W*0.5, W*0.5])
-    meta_tbl.setStyle(TableStyle([("TOPPADDING",(0,0),(-1,-1),2),("BOTTOMPADDING",(0,0),(-1,-1),2)]))
+    meta_tbl = Table(meta_data, colWidths=[W * 0.5, W * 0.5])
+    meta_tbl.setStyle(TableStyle([
+        ("TOPPADDING",    (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]))
     story.append(meta_tbl)
-    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=6*mm, spaceBefore=3*mm))
+    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=5 * mm, spaceBefore=3 * mm))
 
-    # ── SUPPLIER + BANK ──
-    sup = [
-        Paragraph("ПОСТАВЩИК", ParagraphStyle("lbl2", fontName="Helvetica-Bold", fontSize=7, textColor=BLUE, spaceAfter=3)),
+    # ── ПОСТАВЩИК + БАНК ─────────────────────────────────────────────────
+    sup_cell = [
+        Paragraph("ПОСТАВЩИК", s_lbl_bl),
         Paragraph(SUPPLIER_NAME, s_bold),
         Paragraph(f"ИНН {SUPPLIER_INN}", s_small),
         Paragraph(SUPPLIER_ADDRESS, s_xsmall),
     ]
-    bnk = [
-        Paragraph("БАНК ПОЛУЧАТЕЛЯ", ParagraphStyle("lbl3", fontName="Helvetica-Bold", fontSize=7, textColor=BLUE, spaceAfter=3)),
+    bnk_cell = [
+        Paragraph("БАНК ПОЛУЧАТЕЛЯ", s_lbl_bl),
         Paragraph(BANK_NAME, s_bold),
         Paragraph(f"БИК: {BANK_BIK}", s_small),
         Paragraph(f"Корр. сч.: {BANK_CORR}", s_small),
         Paragraph(f"Сч. №: {BANK_ACC}", s_small),
         Paragraph(f"ИНН: {SUPPLIER_INN}", s_small),
     ]
-    sb_data = [[sup, bnk]]
-    sb_tbl = Table(sb_data, colWidths=[W*0.5 - 3*mm, W*0.5 - 3*mm], hAlign="LEFT")
+    sb_tbl = Table([[sup_cell, bnk_cell]], colWidths=[W * 0.5 - 3 * mm, W * 0.5 - 3 * mm])
     sb_tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,-1), BG),
-        ("BOX",        (0,0), (0,0),   0.5, colors.HexColor("#dbeafe")),
-        ("BOX",        (1,0), (1,0),   0.5, colors.HexColor("#dbeafe")),
-        ("ROUNDEDCORNERS", [4]),
-        ("VALIGN",     (0,0), (-1,-1), "TOP"),
-        ("LEFTPADDING", (0,0),(-1,-1), 8),
-        ("RIGHTPADDING",(0,0),(-1,-1), 8),
-        ("TOPPADDING",  (0,0),(-1,-1), 8),
-        ("BOTTOMPADDING",(0,0),(-1,-1), 8),
-        ("COLPADDING",  (0,0),(-1,-1), 6),
+        ("BACKGROUND",    (0, 0), (-1, -1), BG),
+        ("BOX",           (0, 0), (0, 0),  0.5, colors.HexColor("#dbeafe")),
+        ("BOX",           (1, 0), (1, 0),  0.5, colors.HexColor("#dbeafe")),
+        ("VALIGN",        (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
+        ("TOPPADDING",    (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
     ]))
     story.append(sb_tbl)
-    story.append(Spacer(1, 4*mm))
+    story.append(Spacer(1, 4 * mm))
 
-    # ── BUYER ──
-    buyer_data = [[
-        Paragraph("ПОКУПАТЕЛЬ", ParagraphStyle("lbl4", fontName="Helvetica-Bold", fontSize=7, textColor=LGRAY, spaceAfter=3)),
+    # ── ПОКУПАТЕЛЬ ────────────────────────────────────────────────────────
+    buyer_inner = [
+        Paragraph("ПОКУПАТЕЛЬ", s_lbl_gr),
         Paragraph(invoice.get("client_name", ""), s_bold),
         Paragraph(invoice.get("client_email", ""), s_small),
-    ]]
-    buyer_tbl = Table([[buyer_data[0]]], colWidths=[W])
+    ]
+    buyer_tbl = Table([[buyer_inner]], colWidths=[W])
     buyer_tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0,0),(-1,-1), colors.HexColor("#fafafa")),
-        ("BOX",        (0,0),(-1,-1), 0.5, colors.HexColor("#e5e7eb")),
-        ("LEFTPADDING",(0,0),(-1,-1), 10),
-        ("TOPPADDING", (0,0),(-1,-1), 8),
-        ("BOTTOMPADDING",(0,0),(-1,-1), 8),
+        ("BACKGROUND",    (0, 0), (-1, -1), colors.HexColor("#fafafa")),
+        ("BOX",           (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 10),
+        ("TOPPADDING",    (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
     ]))
     story.append(buyer_tbl)
-    story.append(Spacer(1, 4*mm))
+    story.append(Spacer(1, 4 * mm))
 
-    # ── ITEMS TABLE ──
+    # ── ТАБЛИЦА ПОЗИЦИЙ ───────────────────────────────────────────────────
     items = invoice.get("items", [])
-    th = [
+    col_w = [10 * mm, W - 10*mm - 18*mm - 34*mm - 36*mm, 18*mm, 34*mm, 36*mm]
+
+    rows = [[
         Paragraph("№", s_th),
-        Paragraph("Наименование", s_th),
+        Paragraph("Наименование товара / услуги", s_th),
         Paragraph("Кол.", s_th),
         Paragraph("Цена", s_th),
         Paragraph("Сумма", s_th),
-    ]
-    rows = [th]
+    ]]
     for i, item in enumerate(items):
         qty   = item.get("quantity", 1)
         price = float(item.get("price", 0))
         total = qty * price
-        row = [
-            Paragraph(str(i+1), s_center),
-            Paragraph(item.get("description",""), st("td", fontSize=9, textColor=DARK)),
+        rows.append([
+            Paragraph(str(i + 1), s_center),
+            Paragraph(item.get("description", ""), st(f"td{i}", fontSize=9, textColor=DARK, fontName=F)),
             Paragraph(str(qty), s_center),
-            Paragraph(_fmt_money(price), st("tdr", fontSize=9, textColor=GRAY, alignment=TA_RIGHT)),
-            Paragraph(_fmt_money(total),  st("tdt", fontSize=9, fontName="Helvetica-Bold", textColor=DARK, alignment=TA_RIGHT)),
-        ]
-        rows.append(row)
+            Paragraph(_fmt_money(price), st(f"pr{i}", fontSize=9, textColor=GRAY, alignment=TA_RIGHT, fontName=F)),
+            Paragraph(_fmt_money(total),  st(f"sm{i}", fontSize=9, fontName=FB, textColor=DARK, alignment=TA_RIGHT)),
+        ])
 
-    col_w = [10*mm, W - 10*mm - 18*mm - 35*mm - 38*mm, 18*mm, 35*mm, 38*mm]
     items_tbl = Table(rows, colWidths=col_w, repeatRows=1)
     row_styles = [
-        ("BACKGROUND",    (0,0), (-1,0),  BLUE),
-        ("TEXTCOLOR",     (0,0), (-1,0),  WHITE),
-        ("FONTNAME",      (0,0), (-1,0),  "Helvetica-Bold"),
-        ("FONTSIZE",      (0,0), (-1,0),  8),
-        ("ALIGN",         (0,0), (-1,-1), "CENTER"),
-        ("ALIGN",         (1,0), (1,-1),  "LEFT"),
-        ("ALIGN",         (3,0), (4,-1),  "RIGHT"),
-        ("VALIGN",        (0,0), (-1,-1), "MIDDLE"),
-        ("TOPPADDING",    (0,0), (-1,-1), 6),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
-        ("LEFTPADDING",   (0,0), (-1,-1), 6),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 6),
-        ("LINEBELOW",     (0,0), (-1,-1), 0.3, colors.HexColor("#e5e7eb")),
+        ("BACKGROUND",    (0, 0), (-1, 0),  BLUE),
+        ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+        ("ALIGN",         (1, 0), (1, -1),  "LEFT"),
+        ("ALIGN",         (3, 0), (4, -1),  "RIGHT"),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 5),
+        ("LINEBELOW",     (0, 0), (-1, -1), 0.3, colors.HexColor("#e5e7eb")),
     ]
     for r in range(1, len(rows)):
         if r % 2 == 0:
-            row_styles.append(("BACKGROUND", (0,r), (-1,r), BG))
+            row_styles.append(("BACKGROUND", (0, r), (-1, r), BG))
     items_tbl.setStyle(TableStyle(row_styles))
     story.append(items_tbl)
-    story.append(Spacer(1, 4*mm))
+    story.append(Spacer(1, 4 * mm))
 
-    # ── TOTAL ──
+    # ── ИТОГО ─────────────────────────────────────────────────────────────
     total = float(invoice.get("total", 0))
-    total_data = [
+    sub_rows = [
         [Paragraph("Подытог", s_small), Paragraph(_fmt_money(total), s_right)],
-        [Paragraph("НДС", s_small),     Paragraph("Без НДС", s_right)],
+        [Paragraph("НДС",     s_small), Paragraph("Без НДС",         s_right)],
     ]
-    total_tbl = Table(total_data, colWidths=[W*0.65, W*0.35])
-    total_tbl.setStyle(TableStyle([
-        ("LINEBELOW", (0,0), (-1,0), 0.5, colors.HexColor("#e5e7eb")),
-        ("LINEBELOW", (0,1), (-1,1), 0.5, colors.HexColor("#e5e7eb")),
-        ("TOPPADDING",    (0,0),(-1,-1), 4),
-        ("BOTTOMPADDING", (0,0),(-1,-1), 4),
+    sub_tbl = Table(sub_rows, colWidths=[W * 0.65, W * 0.35])
+    sub_tbl.setStyle(TableStyle([
+        ("LINEBELOW",     (0, 0), (-1, 0), 0.5, colors.HexColor("#e5e7eb")),
+        ("LINEBELOW",     (0, 1), (-1, 1), 0.5, colors.HexColor("#e5e7eb")),
+        ("TOPPADDING",    (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
 
-    itogo_data = [[
+    itogo_tbl = Table([[
         Paragraph("ИТОГО К ОПЛАТЕ", s_white),
-        Paragraph(_fmt_money(total), ParagraphStyle("whr", fontName="Helvetica-Bold", fontSize=11, textColor=WHITE, alignment=TA_RIGHT)),
-    ]]
-    itogo_tbl = Table(itogo_data, colWidths=[W*0.65, W*0.35])
+        Paragraph(_fmt_money(total), st("whr", fontName=FB, fontSize=11, textColor=WHITE, alignment=TA_RIGHT)),
+    ]], colWidths=[W * 0.65, W * 0.35])
     itogo_tbl.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0), (-1,-1), BLUE),
-        ("TOPPADDING",    (0,0), (-1,-1), 8),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
-        ("LEFTPADDING",   (0,0), (-1,-1), 10),
-        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
-        ("ROUNDEDCORNERS", [4]),
+        ("BACKGROUND",    (0, 0), (-1, -1), BLUE),
+        ("TOPPADDING",    (0, 0), (-1, -1), 9),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 10),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 10),
     ]))
+    story.append(Table([[sub_tbl], [itogo_tbl]], colWidths=[W], hAlign="RIGHT"))
+    story.append(Spacer(1, 4 * mm))
 
-    outer = Table([[total_tbl], [itogo_tbl]], colWidths=[W], hAlign="RIGHT")
-    story.append(outer)
-    story.append(Spacer(1, 5*mm))
-
-    # ── NOTE ──
+    # ── ПРИМЕЧАНИЕ ────────────────────────────────────────────────────────
     if invoice.get("note"):
-        note_data = [[
-            Paragraph("Примечание", ParagraphStyle("np", fontName="Helvetica-Bold", fontSize=7, textColor=colors.HexColor("#d97706"), spaceAfter=2)),
-            Paragraph(invoice["note"], st("nt", fontSize=9, textColor=DARK)),
-        ]]
-        note_tbl = Table(note_data, colWidths=[22*mm, W - 22*mm])
+        note_tbl = Table([[
+            Paragraph("Примечание", st("np", fontName=FB, fontSize=7, textColor=colors.HexColor("#d97706"))),
+            Paragraph(invoice["note"], st("nt", fontSize=9, fontName=F, textColor=DARK)),
+        ]], colWidths=[22 * mm, W - 22 * mm])
         note_tbl.setStyle(TableStyle([
-            ("BACKGROUND",     (0,0),(-1,-1), colors.HexColor("#fffbeb")),
-            ("LINEAFTER",      (0,0),(0,-1),  2, colors.HexColor("#f59e0b")),
-            ("LEFTPADDING",    (0,0),(-1,-1), 8),
-            ("RIGHTPADDING",   (0,0),(-1,-1), 8),
-            ("TOPPADDING",     (0,0),(-1,-1), 6),
-            ("BOTTOMPADDING",  (0,0),(-1,-1), 6),
+            ("BACKGROUND",    (0, 0), (-1, -1), colors.HexColor("#fffbeb")),
+            ("LINEAFTER",     (0, 0), (0, -1),  2, colors.HexColor("#f59e0b")),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
+            ("TOPPADDING",    (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
         ]))
         story.append(note_tbl)
-        story.append(Spacer(1, 4*mm))
+        story.append(Spacer(1, 4 * mm))
 
-    # ── SIGNATURES ──
+    # ── ПОДПИСИ ───────────────────────────────────────────────────────────
     sign_img = stamp_img = None
     sign_data = _fetch_image(SIGN_URL)
     if sign_data:
-        sign_img = Image(sign_data, width=70, height=32)
+        sign_img = Image(sign_data, width=70, height=30)
     stamp_data = _fetch_image(STAMP_URL)
     if stamp_data:
-        stamp_img = Image(stamp_data, width=52, height=52)
+        stamp_img = Image(stamp_data, width=54, height=54)
 
-    left_cell = []
-    left_cell.append(Paragraph("Руководитель / ИП", s_xsmall))
-    left_cell.append(Spacer(1, 2*mm))
     if sign_img and stamp_img:
-        sig_row = Table([[sign_img, stamp_img]], colWidths=[75, 55])
-        sig_row.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"BOTTOM"),("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
-        left_cell.append(sig_row)
+        sig_inner = Table([[sign_img, stamp_img]], colWidths=[72, 56])
+        sig_inner.setStyle(TableStyle([
+            ("VALIGN",        (0, 0), (-1, -1), "BOTTOM"),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 0),
+            ("TOPPADDING",    (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
+        left_sig = sig_inner
     elif sign_img:
-        left_cell.append(sign_img)
-    left_cell.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=1*mm))
-    left_cell.append(Paragraph("Ивченко М.В.", s_xsmall))
+        left_sig = sign_img
+    else:
+        left_sig = Spacer(1, 14 * mm)
 
-    right_cell = [
-        Paragraph("Главный бухгалтер", s_xsmall),
-        Spacer(1, 14*mm),
-        HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=1*mm),
-        Paragraph("подпись", s_xsmall),
-    ]
+    left_cell  = [Paragraph("Руководитель / ИП", s_xsmall), Spacer(1, 2 * mm), left_sig,
+                  HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=1 * mm),
+                  Paragraph("Ивченко М.В.", s_xsmall)]
+    right_cell = [Paragraph("Главный бухгалтер", s_xsmall), Spacer(1, 14 * mm),
+                  HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=1 * mm),
+                  Paragraph("подпись", s_xsmall)]
 
-    sig_tbl = Table([[left_cell, right_cell]], colWidths=[W*0.5, W*0.5])
-    sig_tbl.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),("LEFTPADDING",(1,0),(1,0),16)]))
+    sig_tbl = Table([[left_cell, right_cell]], colWidths=[W * 0.5, W * 0.5])
+    sig_tbl.setStyle(TableStyle([
+        ("VALIGN",       (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING",  (1, 0), (1, 0),  16),
+    ]))
     story.append(sig_tbl)
 
-    # ── FOOTER ──
-    story.append(Spacer(1, 4*mm))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=2*mm))
-    footer_data = [[
+    # ── ПОДВАЛ ────────────────────────────────────────────────────────────
+    story.append(Spacer(1, 4 * mm))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=2 * mm))
+    footer_tbl = Table([[
         Paragraph(f"Создано в Sweep · {SUPPLIER_NAME}", s_xsmall),
-        Paragraph(f"№ {invoice['number']}", ParagraphStyle("fc", fontName="Courier", fontSize=7, textColor=LGRAY, alignment=TA_RIGHT)),
-    ]]
-    footer_tbl = Table(footer_data, colWidths=[W*0.7, W*0.3])
+        Paragraph(f"№ {invoice['number']}", st("fc", fontName=F, fontSize=7, textColor=LGRAY, alignment=TA_RIGHT)),
+    ]], colWidths=[W * 0.7, W * 0.3])
     story.append(footer_tbl)
 
     doc.build(story)
