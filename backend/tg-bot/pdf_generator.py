@@ -16,10 +16,10 @@ LOGO_URL  = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb7
 STAMP_URL = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/e95b92dd-9ec9-4d53-8c1c-ab83b350edda.png"
 SIGN_URL  = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/1e6df93a-5956-48d3-8fda-77ead1406915.png"
 
-# Шрифты с поддержкой кириллицы (DejaVu — встроены в reportlab)
+# Шрифты с поддержкой кириллицы — jsDelivr отдаёт чистый TTF
 FONT_URLS = {
-    "DejaVu":      "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf",
-    "DejaVu-Bold": "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans-Bold.ttf",
+    "DejaVu":      "https://cdn.jsdelivr.net/gh/dejavu-fonts/dejavu-fonts@2.37/ttf/DejaVuSans.ttf",
+    "DejaVu-Bold": "https://cdn.jsdelivr.net/gh/dejavu-fonts/dejavu-fonts@2.37/ttf/DejaVuSans-Bold.ttf",
 }
 
 SUPPLIER_NAME    = "ИП ИВЧЕНКО МАРАТ ВАЛЕНТИНОВИЧ"
@@ -47,10 +47,23 @@ def _register_fonts():
     tmpdir = tempfile.gettempdir()
     for name, url in FONT_URLS.items():
         path = os.path.join(tmpdir, f"{name}.ttf")
-        if not os.path.exists(path):
-            r = requests.get(url, timeout=15)
+        # Скачиваем заново если файла нет или он битый (не TTF сигнатура)
+        need_download = True
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                header = f.read(4)
+            # Валидные TTF сигнатуры: \x00\x01\x00\x00 или 'true' или 'OTTO'
+            if header in (b'\x00\x01\x00\x00', b'true', b'OTTO', b'ttcf'):
+                need_download = False
+        if need_download:
+            r = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+            r.raise_for_status()
+            data = r.content
+            # Проверяем что получили TTF, а не HTML
+            if data[:4] not in (b'\x00\x01\x00\x00', b'true', b'OTTO', b'ttcf'):
+                raise ValueError(f"Загруженный файл не является TTF-шрифтом: {url}")
             with open(path, "wb") as f:
-                f.write(r.content)
+                f.write(data)
         pdfmetrics.registerFont(TTFont(name, path))
     _fonts_registered = True
 
