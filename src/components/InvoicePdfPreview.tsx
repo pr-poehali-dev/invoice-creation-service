@@ -23,8 +23,32 @@ const BANK = {
 
 export default function InvoicePdfPreview({ invoice, onClose }: Props) {
   const handlePrint = () => {
-    // Небольшая задержка чтобы изображения успели загрузиться
-    setTimeout(() => window.print(), 300);
+    const content = document.getElementById("pdf-content");
+    if (!content) return;
+
+    const win = window.open("", "_blank", "width=900,height=1200");
+    if (!win) return;
+
+    win.document.write(`<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title>${invoice.number}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Golos Text', sans-serif; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { size: A4 portrait; margin: 0; }
+    @media print { body { margin: 0; } }
+  </style>
+</head>
+<body>${content.outerHTML}</body>
+</html>`);
+
+    win.document.close();
+    // Ждём загрузки шрифтов и картинок
+    win.onload = () => setTimeout(() => { win.focus(); win.print(); }, 600);
   };
 
   return (
