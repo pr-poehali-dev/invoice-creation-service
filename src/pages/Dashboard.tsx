@@ -48,9 +48,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       {/* Header */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-sm text-muted-foreground mb-1">15 марта 2026</p>
-          <h1 className="text-2xl font-semibold text-foreground">Привет, Юра 👋</h1>
-          <p className="text-muted-foreground mt-1 text-sm">У тебя {invoices.filter(i => i.status === "overdue").length} просроченных счёта</p>
+          <h1 className="text-2xl font-semibold text-foreground">Бухгалтерия</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {invoices.filter(i => i.status === "overdue").length > 0
+              ? `${invoices.filter(i => i.status === "overdue").length} просроченных счёта`
+              : "Все счета в порядке"}
+          </p>
         </div>
         <button
           onClick={() => onNavigate("invoices")}

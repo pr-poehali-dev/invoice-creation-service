@@ -161,7 +161,18 @@ export default function InvoicePdfPreview({ invoice, onClose }: Props) {
                 Покупатель
               </p>
               <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f1117", margin: "0 0 2px 0" }}>{invoice.clientName}</p>
-              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>{invoice.clientEmail}</p>
+              {invoice.clientCompany && (
+                <p style={{ fontSize: "12px", color: "#374151", margin: "0 0 2px 0" }}>{invoice.clientCompany}</p>
+              )}
+              {invoice.clientInn && (
+                <p style={{ fontSize: "11px", color: "#6b7280", margin: "0 0 2px 0" }}>ИНН {invoice.clientInn}</p>
+              )}
+              {invoice.clientAddress && (
+                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 2px 0" }}>{invoice.clientAddress}</p>
+              )}
+              {invoice.clientEmail && (
+                <p style={{ fontSize: "11px", color: "#6b7280", margin: 0 }}>{invoice.clientEmail}</p>
+              )}
             </div>
 
             {/* ── ITEMS TABLE ── */}
