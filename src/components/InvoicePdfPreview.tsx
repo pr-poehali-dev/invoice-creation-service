@@ -1,11 +1,25 @@
 import { Invoice, formatMoney, formatDate } from "@/data/mockData";
 import Icon from "@/components/ui/icon";
-import StatusBadge from "./StatusBadge";
 
 interface Props {
   invoice: Invoice;
   onClose: () => void;
 }
+
+const LOGO_URL = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/74927180-ad7e-4282-8b42-bb069cf38a4e.png";
+
+const SUPPLIER = {
+  name: "ИП ИВЧЕНКО МАРАТ ВАЛЕНТИНОВИЧ",
+  inn: "236000378430",
+  address: "352129, РОССИЯ, КРАСНОДАРСКИЙ КРАЙ, ТИХОРЕЦКИЙ Р-Н, Г ТИХОРЕЦК, УЛ ФАСТОВЦА, Д 140",
+};
+
+const BANK = {
+  name: "АО «ТБанк»",
+  bik: "044525974",
+  corrAccount: "30101810145250000974",
+  account: "40802810900008650283",
+};
 
 export default function InvoicePdfPreview({ invoice, onClose }: Props) {
   const handlePrint = () => window.print();
@@ -31,9 +45,7 @@ export default function InvoicePdfPreview({ invoice, onClose }: Props) {
               <Icon name="Download" size={13} />
               Скачать PDF
             </button>
-            <button
-              className="flex items-center gap-1.5 text-xs font-medium text-background bg-foreground px-3 py-1.5 rounded-lg hover:bg-foreground/80 transition-colors"
-            >
+            <button className="flex items-center gap-1.5 text-xs font-medium text-background bg-foreground px-3 py-1.5 rounded-lg hover:bg-foreground/80 transition-colors">
               <Icon name="Send" size={13} />
               В Telegram
             </button>
@@ -48,39 +60,26 @@ export default function InvoicePdfPreview({ invoice, onClose }: Props) {
           <div
             id="pdf-content"
             className="w-full max-w-[720px] mx-auto bg-white shadow-lg"
-            style={{ minHeight: "960px", padding: "56px 64px", fontFamily: "'Golos Text', sans-serif" }}
+            style={{ minHeight: "1040px", padding: "48px 56px", fontFamily: "'Golos Text', sans-serif" }}
           >
-            {/* Invoice header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "48px" }}>
-              {/* Logo / company */}
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                  <div style={{
-                    width: "36px", height: "36px", background: "#0f1117", borderRadius: "8px",
-                    display: "flex", alignItems: "center", justifyContent: "center"
-                  }}>
-                    <span style={{ color: "white", fontFamily: "Cormorant, serif", fontWeight: 600, fontSize: "18px", lineHeight: 1 }}>S</span>
-                  </div>
-                  <span style={{ fontWeight: 700, fontSize: "18px", letterSpacing: "-0.02em", color: "#0f1117" }}>Sweep</span>
-                </div>
-                <p style={{ fontSize: "12px", color: "#6b7280", lineHeight: "1.6", margin: 0 }}>
-                  ИП Петров Юрий Александрович<br />
-                  ИНН 771234567890<br />
-                  г. Москва, ул. Льва Толстого, 16
-                </p>
-              </div>
 
-              {/* Invoice meta */}
+            {/* ── HEADER: Logo + Invoice title ── */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "36px" }}>
+              <img
+                src={LOGO_URL}
+                alt="Sweep"
+                style={{ height: "38px", objectFit: "contain" }}
+              />
               <div style={{ textAlign: "right" }}>
-                <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#0f1117", margin: "0 0 4px 0", letterSpacing: "-0.03em" }}>
-                  СЧЁТ
+                <h1 style={{ fontSize: "26px", fontWeight: 700, color: "#0f1117", margin: "0 0 2px 0", letterSpacing: "-0.03em" }}>
+                  СЧЁТ НА ОПЛАТУ
                 </h1>
-                <p style={{ fontSize: "13px", color: "#6b7280", margin: "0 0 16px 0", fontFamily: "monospace" }}>
-                  {invoice.number}
+                <p style={{ fontSize: "13px", color: "#6b7280", margin: "0 0 10px 0", fontFamily: "monospace" }}>
+                  № {invoice.number}
                 </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-                    <span style={{ fontSize: "12px", color: "#9ca3af" }}>Выставлен:</span>
+                    <span style={{ fontSize: "12px", color: "#9ca3af" }}>Дата:</span>
                     <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500 }}>{formatDate(invoice.createdAt)}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
@@ -91,44 +90,83 @@ export default function InvoicePdfPreview({ invoice, onClose }: Props) {
               </div>
             </div>
 
-            {/* Divider */}
-            <div style={{ height: "1px", background: "#e5e7eb", marginBottom: "32px" }} />
+            {/* ── DIVIDER ── */}
+            <div style={{ height: "2px", background: "#1d4ed8", marginBottom: "28px", borderRadius: "2px" }} />
 
-            {/* Bill to */}
-            <div style={{ marginBottom: "40px" }}>
-              <p style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px 0" }}>
-                Счёт выставлен для
-              </p>
-              <p style={{ fontSize: "16px", fontWeight: 600, color: "#0f1117", margin: "0 0 4px 0" }}>{invoice.clientName}</p>
-              <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>{invoice.clientEmail}</p>
+            {/* ── SUPPLIER + BANK block ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "28px" }}>
+              {/* Supplier */}
+              <div style={{ background: "#f8faff", border: "1px solid #dbeafe", borderRadius: "10px", padding: "16px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px 0" }}>
+                  Поставщик
+                </p>
+                <p style={{ fontSize: "12px", fontWeight: 700, color: "#0f1117", margin: "0 0 4px 0", lineHeight: 1.4 }}>
+                  {SUPPLIER.name}
+                </p>
+                <p style={{ fontSize: "11px", color: "#6b7280", margin: "0 0 2px 0" }}>ИНН {SUPPLIER.inn}</p>
+                <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>
+                  {SUPPLIER.address}
+                </p>
+              </div>
+
+              {/* Bank */}
+              <div style={{ background: "#f8faff", border: "1px solid #dbeafe", borderRadius: "10px", padding: "16px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px 0" }}>
+                  Банк получателя
+                </p>
+                <p style={{ fontSize: "12px", fontWeight: 700, color: "#0f1117", margin: "0 0 6px 0" }}>{BANK.name}</p>
+                <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "2px 10px" }}>
+                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>БИК</span>
+                  <span style={{ fontSize: "11px", color: "#374151", fontWeight: 500, fontFamily: "monospace" }}>{BANK.bik}</span>
+                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>Корр. сч.</span>
+                  <span style={{ fontSize: "11px", color: "#374151", fontWeight: 500, fontFamily: "monospace" }}>{BANK.corrAccount}</span>
+                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>Сч. №</span>
+                  <span style={{ fontSize: "11px", color: "#374151", fontWeight: 500, fontFamily: "monospace" }}>{BANK.account}</span>
+                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>ИНН</span>
+                  <span style={{ fontSize: "11px", color: "#374151", fontWeight: 500, fontFamily: "monospace" }}>{SUPPLIER.inn}</span>
+                </div>
+              </div>
             </div>
 
-            {/* Items table */}
-            <div style={{ marginBottom: "32px" }}>
+            {/* ── BILL TO ── */}
+            <div style={{ marginBottom: "28px", padding: "14px 16px", background: "#fafafa", borderRadius: "10px", border: "1px solid #f0f0f0" }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 6px 0" }}>
+                Покупатель
+              </p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f1117", margin: "0 0 2px 0" }}>{invoice.clientName}</p>
+              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>{invoice.clientEmail}</p>
+            </div>
+
+            {/* ── ITEMS TABLE ── */}
+            <div style={{ marginBottom: "28px" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ borderBottom: "2px solid #0f1117" }}>
-                    <th style={{ textAlign: "left", fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 0 10px 0" }}>
-                      Наименование
+                  <tr style={{ background: "#1d4ed8" }}>
+                    <th style={{ textAlign: "left", fontSize: "11px", fontWeight: 600, color: "#ffffff", padding: "10px 12px", borderRadius: "0" }}>
+                      №
                     </th>
-                    <th style={{ textAlign: "center", fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 0 10px 0", width: "80px" }}>
+                    <th style={{ textAlign: "left", fontSize: "11px", fontWeight: 600, color: "#ffffff", padding: "10px 12px" }}>
+                      Наименование товара / услуги
+                    </th>
+                    <th style={{ textAlign: "center", fontSize: "11px", fontWeight: 600, color: "#ffffff", padding: "10px 12px", width: "60px" }}>
                       Кол.
                     </th>
-                    <th style={{ textAlign: "right", fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 0 10px 0", width: "120px" }}>
+                    <th style={{ textAlign: "right", fontSize: "11px", fontWeight: 600, color: "#ffffff", padding: "10px 12px", width: "110px" }}>
                       Цена
                     </th>
-                    <th style={{ textAlign: "right", fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 0 10px 0", width: "130px" }}>
+                    <th style={{ textAlign: "right", fontSize: "11px", fontWeight: 600, color: "#ffffff", padding: "10px 12px", width: "120px" }}>
                       Сумма
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoice.items.map((item, idx) => (
-                    <tr key={item.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                      <td style={{ padding: "14px 0", fontSize: "14px", color: "#374151" }}>{item.description}</td>
-                      <td style={{ padding: "14px 0", fontSize: "14px", color: "#6b7280", textAlign: "center" }}>{item.quantity}</td>
-                      <td style={{ padding: "14px 0", fontSize: "14px", color: "#6b7280", textAlign: "right" }}>{formatMoney(item.price)}</td>
-                      <td style={{ padding: "14px 0", fontSize: "14px", fontWeight: 500, color: "#0f1117", textAlign: "right" }}>
+                    <tr key={item.id} style={{ background: idx % 2 === 0 ? "#ffffff" : "#f8faff", borderBottom: "1px solid #e5e7eb" }}>
+                      <td style={{ padding: "12px 12px", fontSize: "12px", color: "#9ca3af" }}>{idx + 1}</td>
+                      <td style={{ padding: "12px 12px", fontSize: "13px", color: "#374151" }}>{item.description}</td>
+                      <td style={{ padding: "12px 12px", fontSize: "13px", color: "#6b7280", textAlign: "center" }}>{item.quantity}</td>
+                      <td style={{ padding: "12px 12px", fontSize: "13px", color: "#6b7280", textAlign: "right" }}>{formatMoney(item.price)}</td>
+                      <td style={{ padding: "12px 12px", fontSize: "13px", fontWeight: 600, color: "#0f1117", textAlign: "right" }}>
                         {formatMoney(item.quantity * item.price)}
                       </td>
                     </tr>
@@ -137,39 +175,53 @@ export default function InvoicePdfPreview({ invoice, onClose }: Props) {
               </table>
             </div>
 
-            {/* Total */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "40px" }}>
-              <div style={{ minWidth: "260px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #e5e7eb" }}>
-                  <span style={{ fontSize: "13px", color: "#6b7280" }}>Подытог</span>
-                  <span style={{ fontSize: "13px", color: "#374151" }}>{formatMoney(invoice.total)}</span>
+            {/* ── TOTAL ── */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "32px" }}>
+              <div style={{ minWidth: "280px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid #e5e7eb" }}>
+                  <span style={{ fontSize: "12px", color: "#6b7280" }}>Подытог</span>
+                  <span style={{ fontSize: "12px", color: "#374151" }}>{formatMoney(invoice.total)}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #e5e7eb" }}>
-                  <span style={{ fontSize: "13px", color: "#6b7280" }}>НДС (0%)</span>
-                  <span style={{ fontSize: "13px", color: "#374151" }}>—</span>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid #e5e7eb" }}>
+                  <span style={{ fontSize: "12px", color: "#6b7280" }}>НДС</span>
+                  <span style={{ fontSize: "12px", color: "#374151" }}>Без НДС</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 16px", background: "#0f1117", borderRadius: "10px", marginTop: "8px" }}>
-                  <span style={{ fontSize: "15px", fontWeight: 600, color: "#ffffff" }}>ИТОГО К ОПЛАТЕ</span>
-                  <span style={{ fontSize: "15px", fontWeight: 700, color: "#ffffff" }}>{formatMoney(invoice.total)}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 16px", background: "#1d4ed8", borderRadius: "10px", marginTop: "8px" }}>
+                  <span style={{ fontSize: "14px", fontWeight: 700, color: "#ffffff" }}>ИТОГО К ОПЛАТЕ</span>
+                  <span style={{ fontSize: "14px", fontWeight: 700, color: "#ffffff" }}>{formatMoney(invoice.total)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Note */}
+            {/* ── NOTE ── */}
             {invoice.note && (
-              <div style={{ background: "#f9fafb", borderRadius: "10px", padding: "16px", marginBottom: "32px", borderLeft: "3px solid #e5e7eb" }}>
-                <p style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 6px 0" }}>
+              <div style={{ background: "#fffbeb", borderRadius: "10px", padding: "14px 16px", marginBottom: "28px", borderLeft: "3px solid #f59e0b" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, color: "#d97706", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 5px 0" }}>
                   Примечание
                 </p>
-                <p style={{ fontSize: "13px", color: "#374151", margin: 0 }}>{invoice.note}</p>
+                <p style={{ fontSize: "12px", color: "#374151", margin: 0 }}>{invoice.note}</p>
               </div>
             )}
 
-            {/* Footer */}
-            <div style={{ height: "1px", background: "#e5e7eb", margin: "0 0 20px 0" }} />
+            {/* ── SIGNATURE BLOCK ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", marginBottom: "28px", marginTop: "16px" }}>
+              <div>
+                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 24px 0" }}>Руководитель / ИП</p>
+                <div style={{ borderBottom: "1px solid #e5e7eb", marginBottom: "4px" }} />
+                <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0 }}>подпись / Ивченко М.В.</p>
+              </div>
+              <div>
+                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 24px 0" }}>Главный бухгалтер</p>
+                <div style={{ borderBottom: "1px solid #e5e7eb", marginBottom: "4px" }} />
+                <p style={{ fontSize: "10px", color: "#9ca3af", margin: 0 }}>подпись</p>
+              </div>
+            </div>
+
+            {/* ── FOOTER ── */}
+            <div style={{ height: "1px", background: "#e5e7eb", margin: "0 0 16px 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <p style={{ fontSize: "11px", color: "#d1d5db", margin: 0 }}>Сгенерировано в Sweep · sweep.poehali.dev</p>
-              <p style={{ fontSize: "11px", color: "#d1d5db", margin: 0, fontFamily: "monospace" }}>{invoice.number}</p>
+              <p style={{ fontSize: "10px", color: "#d1d5db", margin: 0 }}>Создано в Sweep · поставщик: {SUPPLIER.name}</p>
+              <p style={{ fontSize: "10px", color: "#d1d5db", margin: 0, fontFamily: "monospace" }}>№ {invoice.number}</p>
             </div>
           </div>
         </div>
