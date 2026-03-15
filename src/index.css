@@ -145,3 +145,28 @@
     @apply border-t border-border;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #pdf-content,
+  #pdf-content * {
+    visibility: visible;
+  }
+  #pdf-content {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 40px 56px !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    min-height: unset !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}

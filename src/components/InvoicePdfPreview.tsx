@@ -22,7 +22,10 @@ const BANK = {
 };
 
 export default function InvoicePdfPreview({ invoice, onClose }: Props) {
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    // Небольшая задержка чтобы изображения успели загрузиться
+    setTimeout(() => window.print(), 300);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
