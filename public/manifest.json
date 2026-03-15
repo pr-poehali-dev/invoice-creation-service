@@ -1,0 +1,18 @@
+{
+  "name": "Бухгалтерия Sweep",
+  "short_name": "Бухгалтерия",
+  "description": "Управление счетами и PDF",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1d4ed8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/b3e1fdda-d623-45d7-8576-66d557372c36.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
