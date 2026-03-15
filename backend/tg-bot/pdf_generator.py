@@ -16,10 +16,25 @@ LOGO_URL  = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb7
 STAMP_URL = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/e95b92dd-9ec9-4d53-8c1c-ab83b350edda.png"
 SIGN_URL  = "https://cdn.poehali.dev/projects/68306774-d4e1-4aad-b342-c18426adb743/bucket/1e6df93a-5956-48d3-8fda-77ead1406915.png"
 
-# Шрифты с поддержкой кириллицы — jsDelivr отдаёт чистый TTF
-FONT_URLS = {
-    "DejaVu":      "https://cdn.jsdelivr.net/gh/dejavu-fonts/dejavu-fonts@2.37/ttf/DejaVuSans.ttf",
-    "DejaVu-Bold": "https://cdn.jsdelivr.net/gh/dejavu-fonts/dejavu-fonts@2.37/ttf/DejaVuSans-Bold.ttf",
+# Кандидаты для шрифтов — системные пути Ubuntu + fallback URL
+FONT_CANDIDATES = {
+    "DejaVu": {
+        "system": [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        ],
+        "urls": [
+            "https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2",
+        ],
+        "raw_url": "https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans.ttf",
+    },
+    "DejaVu-Bold": {
+        "system": [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+        ],
+        "raw_url": "https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/master/ttf/DejaVuSans-Bold.ttf",
+    },
 }
 
 SUPPLIER_NAME    = "ИП ИВЧЕНКО МАРАТ ВАЛЕНТИНОВИЧ"
@@ -40,31 +55,61 @@ WHITE = colors.white
 
 _fonts_registered = False
 
+TTF_SIGS = (b'\x00\x01\x00\x00', b'true', b'OTTO', b'ttcf')
+
+def _is_valid_ttf(path: str) -> bool:
+    try:
+        with open(path, "rb") as f:
+            return f.read(4) in TTF_SIGS
+    except Exception:
+        return False
+
+def _download_ttf(url: str, dest: str) -> bool:
+    """Скачивает TTF и возвращает True если файл валидный."""
+    try:
+        r = requests.get(url, timeout=20, headers={"User-Agent": "python-requests/sweep"})
+        if r.status_code == 200 and r.content[:4] in TTF_SIGS:
+            with open(dest, "wb") as f:
+                f.write(r.content)
+            return True
+    except Exception:
+        pass
+    return False
+
 def _register_fonts():
     global _fonts_registered
     if _fonts_registered:
         return
+
     tmpdir = tempfile.gettempdir()
-    for name, url in FONT_URLS.items():
-        path = os.path.join(tmpdir, f"{name}.ttf")
-        # Скачиваем заново если файла нет или он битый (не TTF сигнатура)
-        need_download = True
-        if os.path.exists(path):
-            with open(path, "rb") as f:
-                header = f.read(4)
-            # Валидные TTF сигнатуры: \x00\x01\x00\x00 или 'true' или 'OTTO'
-            if header in (b'\x00\x01\x00\x00', b'true', b'OTTO', b'ttcf'):
-                need_download = False
-        if need_download:
-            r = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
-            r.raise_for_status()
-            data = r.content
-            # Проверяем что получили TTF, а не HTML
-            if data[:4] not in (b'\x00\x01\x00\x00', b'true', b'OTTO', b'ttcf'):
-                raise ValueError(f"Загруженный файл не является TTF-шрифтом: {url}")
-            with open(path, "wb") as f:
-                f.write(data)
-        pdfmetrics.registerFont(TTFont(name, path))
+
+    for name, cfg in FONT_CANDIDATES.items():
+        resolved = None
+
+        # 1. Ищем системный шрифт
+        for sys_path in cfg.get("system", []):
+            if os.path.exists(sys_path) and _is_valid_ttf(sys_path):
+                resolved = sys_path
+                break
+
+        # 2. Проверяем кеш во /tmp
+        if not resolved:
+            cached = os.path.join(tmpdir, f"{name}.ttf")
+            if os.path.exists(cached) and _is_valid_ttf(cached):
+                resolved = cached
+
+        # 3. Скачиваем по raw_url
+        if not resolved:
+            dest = os.path.join(tmpdir, f"{name}.ttf")
+            raw_url = cfg.get("raw_url", "")
+            if raw_url and _download_ttf(raw_url, dest):
+                resolved = dest
+
+        if not resolved:
+            raise RuntimeError(f"Не удалось найти шрифт {name}")
+
+        pdfmetrics.registerFont(TTFont(name, resolved))
+
     _fonts_registered = True
 
 
