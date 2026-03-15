@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import TelegramSetupModal from "@/components/TelegramSetupModal";
 
 type Page = "dashboard" | "invoices" | "clients" | "history";
 
@@ -16,6 +17,7 @@ const navItems: { id: Page; label: string; icon: string }[] = [
 
 export default function Layout({ children }: LayoutProps) {
   const [page, setPage] = useState<Page>("dashboard");
+  const [showTg, setShowTg] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -53,9 +55,12 @@ export default function Layout({ children }: LayoutProps) {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors">
-              <Icon name="Send" size={15} />
-              <span className="hidden md:inline text-sm font-medium">Telegram</span>
+            <button
+              onClick={() => setShowTg(true)}
+              className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors text-sm font-medium px-3 py-1.5 rounded-lg"
+            >
+              <Icon name="Send" size={14} />
+              <span className="hidden md:inline">Telegram-бот</span>
             </button>
             <button className="w-8 h-8 rounded-full bg-foreground/8 border border-border flex items-center justify-center hover:bg-secondary transition-colors">
               <span className="text-xs font-semibold text-foreground">Ю</span>
@@ -68,6 +73,8 @@ export default function Layout({ children }: LayoutProps) {
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
         {children(page, setPage)}
       </main>
+
+      {showTg && <TelegramSetupModal onClose={() => setShowTg(false)} />}
 
       {/* Footer */}
       <footer className="border-t border-border py-4">
