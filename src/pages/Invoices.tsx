@@ -1,9 +1,15 @@
 import { useState } from "react";
-import { invoices as initialInvoices, Invoice, InvoiceStatus, statusLabels, formatMoney, formatDate, clients } from "@/data/mockData";
+import { Invoice, InvoiceStatus, statusLabels, formatMoney, formatDate, Client } from "@/data/mockData";
 import StatusBadge from "@/components/StatusBadge";
 import Icon from "@/components/ui/icon";
 import InvoiceModal from "@/components/InvoiceModal";
 import InvoicePdfPreview from "@/components/InvoicePdfPreview";
+
+interface Props {
+  invoices: Invoice[];
+  setInvoices: (fn: (prev: Invoice[]) => Invoice[]) => void;
+  clients: Client[];
+}
 
 const filterOptions: { value: InvoiceStatus | "all"; label: string }[] = [
   { value: "all", label: "Все" },
@@ -13,13 +19,13 @@ const filterOptions: { value: InvoiceStatus | "all"; label: string }[] = [
   { value: "overdue", label: "Просрочены" },
 ];
 
-export default function Invoices() {
+export default function Invoices({ invoices, setInvoices, clients }: Props) {
   const [filter, setFilter] = useState<InvoiceStatus | "all">("all");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showPdf, setShowPdf] = useState<Invoice | null>(null);
-  const [invoices, setInvoices] = useState(initialInvoices);
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const filtered = invoices.filter((inv) => {
     const matchFilter = filter === "all" || inv.status === filter;
@@ -45,6 +51,14 @@ export default function Invoices() {
 
   const handleDelete = (id: string) => {
     setInvoices((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  const handleCopyLink = (inv: Invoice) => {
+    const url = `${window.location.origin}${window.location.pathname}#invoice-${inv.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(inv.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
   };
 
   return (
@@ -145,6 +159,13 @@ export default function Invoices() {
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1 justify-end">
                         <button
+                          onClick={() => handleCopyLink(inv)}
+                          className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                          title="Скопировать ссылку"
+                        >
+                          <Icon name={copiedId === inv.id ? "Check" : "Link"} size={14} className={copiedId === inv.id ? "text-green-600" : ""} />
+                        </button>
+                        <button
                           onClick={() => setShowPdf(inv)}
                           className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                           title="Просмотр PDF"
@@ -174,11 +195,12 @@ export default function Invoices() {
                                   <span>Отметить: {statusLabels[s]}</span>
                                 </button>
                               ))}
-                            <div className="border-t border-border" />
+                            <div className="border-t border-border my-1" />
                             <button
                               onClick={() => handleDelete(inv.id)}
-                              className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                              className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
                             >
+                              <Icon name="Trash2" size={12} />
                               Удалить
                             </button>
                           </div>

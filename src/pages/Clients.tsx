@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { clients as initialClients, Client, formatMoney, formatDate } from "@/data/mockData";
+import { Client, formatMoney } from "@/data/mockData";
 import Icon from "@/components/ui/icon";
 
-export default function Clients() {
-  const [clients, setClients] = useState(initialClients);
+interface Props {
+  clients: Client[];
+  setClients: (fn: (prev: Client[]) => Client[]) => void;
+}
+
+export default function Clients({ clients, setClients }: Props) {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<Client | null>(null);
@@ -114,6 +118,10 @@ export default function Clients() {
             }
             setShowModal(false);
           }}
+          onDelete={(id) => {
+            setClients((prev) => prev.filter((cl) => cl.id !== id));
+            setShowModal(false);
+          }}
           onClose={() => setShowModal(false)}
         />
       )}
@@ -121,7 +129,17 @@ export default function Clients() {
   );
 }
 
-function ClientModal({ client, onSave, onClose }: { client: Client | null; onSave: (c: Client) => void; onClose: () => void }) {
+function ClientModal({
+  client,
+  onSave,
+  onDelete,
+  onClose,
+}: {
+  client: Client | null;
+  onSave: (c: Client) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
   const [form, setForm] = useState<Partial<Client>>(client || {});
 
   const update = (field: keyof Client, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
@@ -173,7 +191,17 @@ function ClientModal({ client, onSave, onClose }: { client: Client | null; onSav
           ))}
         </div>
         <div className="px-6 py-4 border-t border-border flex justify-between">
-          <button onClick={onClose} className="btn-secondary">Отмена</button>
+          {client ? (
+            <button
+              onClick={() => onDelete(client.id)}
+              className="btn-secondary text-red-600 hover:bg-red-50"
+            >
+              <Icon name="Trash2" size={14} />
+              Удалить
+            </button>
+          ) : (
+            <button onClick={onClose} className="btn-secondary">Отмена</button>
+          )}
           <button onClick={handleSave} disabled={!form.name || !form.email} className="btn-primary disabled:opacity-40">
             <Icon name="Check" size={14} />
             Сохранить

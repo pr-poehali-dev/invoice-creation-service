@@ -1,12 +1,14 @@
-import { invoices, clients, formatMoney, formatDate } from "@/data/mockData";
+import { Client, Invoice, formatMoney, formatDate } from "@/data/mockData";
 import StatusBadge from "@/components/StatusBadge";
 import Icon from "@/components/ui/icon";
 
 interface DashboardProps {
+  invoices: Invoice[];
+  clients: Client[];
   onNavigate: (page: "invoices" | "clients" | "history") => void;
 }
 
-export default function Dashboard({ onNavigate }: DashboardProps) {
+export default function Dashboard({ invoices, clients, onNavigate }: DashboardProps) {
   const totalRevenue = invoices.filter(i => i.status === "paid").reduce((s, i) => s + i.total, 0);
   const pending = invoices.filter(i => i.status === "sent").reduce((s, i) => s + i.total, 0);
   const overdue = invoices.filter(i => i.status === "overdue").reduce((s, i) => s + i.total, 0);
@@ -91,26 +93,30 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             </button>
           </div>
           <div className="bg-white rounded-xl border border-border overflow-hidden">
-            {recent.map((inv, idx) => (
-              <div
-                key={inv.id}
-                className={`flex items-center gap-4 px-4 py-3.5 hover:bg-secondary/50 transition-colors cursor-pointer ${
-                  idx < recent.length - 1 ? "border-b border-border" : ""
-                }`}
-              >
-                <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                  <Icon name="FileText" size={16} className="text-muted-foreground" />
+            {recent.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">Счетов пока нет</div>
+            ) : (
+              recent.map((inv, idx) => (
+                <div
+                  key={inv.id}
+                  className={`flex items-center gap-4 px-4 py-3.5 hover:bg-secondary/50 transition-colors cursor-pointer ${
+                    idx < recent.length - 1 ? "border-b border-border" : ""
+                  }`}
+                >
+                  <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                    <Icon name="FileText" size={16} className="text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{inv.clientName}</p>
+                    <p className="text-xs text-muted-foreground">{inv.number} · {formatDate(inv.createdAt)}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-semibold text-foreground">{formatMoney(inv.total)}</p>
+                    <StatusBadge status={inv.status} size="sm" />
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{inv.clientName}</p>
-                  <p className="text-xs text-muted-foreground">{inv.number} · {formatDate(inv.createdAt)}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-foreground">{formatMoney(inv.total)}</p>
-                  <StatusBadge status={inv.status} size="sm" />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

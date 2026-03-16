@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Invoice, formatMoney, formatDate } from "@/data/mockData";
 import Icon from "@/components/ui/icon";
 
@@ -22,6 +23,16 @@ const BANK = {
 };
 
 export default function InvoicePdfPreview({ invoice, onClose }: Props) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}${window.location.pathname}#invoice-${invoice.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   const handlePrint = () => {
     const content = document.getElementById("pdf-content");
     if (!content) return;
@@ -65,6 +76,13 @@ export default function InvoicePdfPreview({ invoice, onClose }: Props) {
             <span className="ml-2 text-xs text-muted-foreground font-mono">{invoice.number}.pdf</span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-1.5 text-xs font-medium text-foreground bg-white border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
+            >
+              <Icon name={copied ? "Check" : "Link"} size={13} className={copied ? "text-green-600" : ""} />
+              {copied ? "Скопировано!" : "Копировать ссылку"}
+            </button>
             <button
               onClick={handlePrint}
               className="flex items-center gap-1.5 text-xs font-medium text-foreground bg-white border border-border px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
